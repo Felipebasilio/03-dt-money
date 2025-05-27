@@ -1,0 +1,13 @@
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .done {
+    color: var(--green-500);
+  }
+
+  .inProgress {
+    color: var(--yellow-500);
+  }
+}
