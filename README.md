@@ -52,4 +52,4 @@ export default tseslint.config({
   },
 })
 ```
-# 03-dt-money
+# 02-ignite-timer
