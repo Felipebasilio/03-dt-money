@@ -2,10 +2,12 @@ import { Status } from "@/components";
 import styles from "./styles.module.css";
 import { useContext } from "react";
 import { CyclesContext } from "../../contexts/CyclesContext";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export function History() {
   const { cycles } = useContext(CyclesContext);
-  
+
   return (
     <div className={styles.historyContainer}>
       <h1 className={styles.historyContainerTitle}>Meu histórico</h1>
@@ -21,18 +23,24 @@ export function History() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Tarefa</td>
-              <td>20 minutos</td>
-              <td>Há cerca de 2 meses</td>
-              <td><Status status="done" /></td>
-            </tr>
-            <tr>
-              <td>Tarefa</td>
-              <td>20 minutos</td>
-              <td>Há cerca de 2 meses</td>
-              <td><Status status="inProgress" /></td>
-            </tr>
+            {cycles.map((cycle) => (
+              <tr key={cycle.id}>
+                <td>{cycle.task}</td>
+                <td>{cycle.minutesAmount} minutos</td>
+                <td>{formatDistanceToNow(cycle.startDate, { addSuffix: true, locale: ptBR })}</td>
+                <td>
+                  {cycle.finishedDate && (
+                    <Status status="done" />
+                  )}
+                  {cycle.interruptedDate && (
+                    <Status status="interrupted" />
+                  )}
+                  {!cycle.finishedDate && !cycle.interruptedDate && (
+                    <Status status="inProgress" />
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
