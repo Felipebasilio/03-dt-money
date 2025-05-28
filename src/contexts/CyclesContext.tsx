@@ -1,17 +1,19 @@
-import { createContext, useState } from "react";
+import {
+  addNewCycleAction,
+  interruptCurrentCycleAction,
+  markCurrentCycleAsFinishedAction,
+} from "@/reducers/cycles/actions";
+import {
+  cyclesReducer,
+  type Cycle,
+  type CyclesState,
+} from "@/reducers/cycles/reducer";
+import { differenceInSeconds } from "date-fns";
+import { createContext, useEffect, useReducer, useState } from "react";
 
 interface CreateCycleData {
   task: string;
   minutesAmount: number;
-}
-
-interface Cycle {
-  id: string;
-  task: string;
-  minutesAmount: number;
-  startDate: Date;
-  interruptedDate?: Date;
-  finishedDate?: Date;
 }
 
 interface CyclesContextType {
@@ -31,27 +33,58 @@ interface CyclesContextProviderProps {
   children: React.ReactNode;
 }
 
+const initialState: CyclesState = {
+  cycles: [],
+  activeCycleId: null,
+};
+
 export function CyclesContextProvider({
   children,
 }: CyclesContextProviderProps) {
-  const [cycles, setCycles] = useState<Cycle[]>([]);
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
-  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0);
+  const [cyclesState, dispatch] = useReducer(
+    cyclesReducer,
+    initialState,
+    () => {
+      const storedStateAsJSON = localStorage.getItem(
+        "@ignite-timer:cycles-state-1.0.0"
+      );
+
+      if (storedStateAsJSON) {
+        return JSON.parse(storedStateAsJSON);
+      }
+
+      return initialState;
+    }
+  );
+
+  const { cycles, activeCycleId } = cyclesState;
 
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
+
+  const [amountSecondsPassed, setAmountSecondsPassed] = useState(() => {
+    if (activeCycle) {
+      const secondsDifference = differenceInSeconds(
+        new Date(),
+        new Date(activeCycle.startDate)
+      );
+
+      return secondsDifference;
+    }
+
+    return 0;
+  });
+
+  useEffect(() => {
+    const stateJSON = JSON.stringify(cyclesState);
+    localStorage.setItem("@ignite-timer:cycles-state-1.0.0", stateJSON);
+  }, [cyclesState]);
 
   function setSecondsPassed(seconds: number) {
     setAmountSecondsPassed(seconds);
   }
 
   function markCurrentCycleAsFinished() {
-    setCycles((state) =>
-      state.map((cycle) =>
-        cycle.id === activeCycleId
-          ? { ...cycle, finishedDate: new Date() }
-          : cycle
-      )
-    );
+    dispatch(markCurrentCycleAsFinishedAction(activeCycleId));
   }
 
   function createNewCycle(data: CreateCycleData) {
@@ -64,21 +97,13 @@ export function CyclesContextProvider({
       finishedDate: undefined,
     };
 
-    setCycles((state) => [...state, newCycle]);
-    setActiveCycleId(newCycle.id);
+    dispatch(addNewCycleAction(newCycle));
+
     setAmountSecondsPassed(0);
   }
 
   function interruptCurrentCycle() {
-    setCycles((state) =>
-      state.map((cycle) =>
-        cycle.id === activeCycleId
-          ? { ...cycle, interruptedDate: new Date() }
-          : cycle
-      )
-    );
-
-    setActiveCycleId(null);
+    dispatch(interruptCurrentCycleAction(activeCycleId));
   }
 
   return (
