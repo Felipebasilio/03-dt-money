@@ -1,12 +1,17 @@
 import styles from "./styles.module.css";
-import { StartCountdownButton } from "@/components";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useContext } from "react";
+import { NewCycleForm, Countdown } from "./components";
+import { StopCountdownButton, StartCountdownButton } from "@/components";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
+import { CyclesContext } from "../../contexts/CyclesContext";
 
 // A form can be controlled or uncontrolled.
 // A controlled form is a form that is controlled by the state of the component.
 // An uncontrolled form is a form that is controlled by the DOM.
+
+type NewCycleFormData = z.infer<typeof newCycleFormValidationSchema>;
 
 const newCycleFormValidationSchema = z.object({
   task: z.string().min(1, "Informe a tarefa"),
@@ -17,7 +22,10 @@ const newCycleFormValidationSchema = z.object({
 });
 
 export function Home() {
-  const { register, handleSubmit, watch, reset } = useForm<z.infer<typeof newCycleFormValidationSchema>>({
+  const { activeCycle, createNewCycle, interruptCurrentCycle } =
+    useContext(CyclesContext);
+
+  const newCycleForm = useForm<z.infer<typeof newCycleFormValidationSchema>>({
     resolver: zodResolver(newCycleFormValidationSchema),
     defaultValues: {
       task: "",
@@ -25,8 +33,10 @@ export function Home() {
     },
   });
 
-  function handleCreateNewCycle(data: z.infer<typeof newCycleFormValidationSchema>) {
-    console.log(data);
+  const { handleSubmit, watch, reset } = newCycleForm;
+
+  function handleCreateNewCycle(data: NewCycleFormData) {
+    createNewCycle(data);
     reset();
   }
 
@@ -36,48 +46,16 @@ export function Home() {
   return (
     <div className={styles.homeContainer}>
       <form action="" onSubmit={handleSubmit(handleCreateNewCycle)}>
-        <div className={styles.formContainer}>
-          <label htmlFor="task">Vou trabalhar em</label>
-          <input
-            type="text"
-            id="task"
-            placeholder="Dê um nome para o seu projeto"
-            className={styles.taskInput}
-            {...register("task")}
-          />
+        <FormProvider {...newCycleForm}>
+          <NewCycleForm />
+        </FormProvider>
+        <Countdown />
 
-          <datalist id="task-suggestions">
-            <option value="Projeto 1" />
-            <option value="Projeto 2" />
-            <option value="Projeto 3" />
-            <option value="Projeto 4" />
-            <option value="Projeto 5" />
-          </datalist>
-
-          <label htmlFor="minutesAmount">durante</label>
-          <input
-            type="number"
-            id="minutesAmount"
-            placeholder="00"
-            className={styles.minutesAmountInput}
-            step={5}
-            min={5}
-            max={60}
-            {...register("minutesAmount", { valueAsNumber: true })}
-          />
-
-          <span>minutos.</span>
-        </div>
-
-        <div className={styles.countdownContainer}>
-          <span>0</span>
-          <span>0</span>
-          <span className={styles.separator}>:</span>
-          <span>0</span>
-          <span>0</span>
-        </div>
-
-        <StartCountdownButton disabled={isSubmitDisabled} />
+        {activeCycle ? (
+          <StopCountdownButton onClick={interruptCurrentCycle} />
+        ) : (
+          <StartCountdownButton disabled={isSubmitDisabled} />
+        )}
       </form>
     </div>
   );

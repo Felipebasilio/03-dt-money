@@ -1,7 +1,11 @@
 import { Status } from "@/components";
 import styles from "./styles.module.css";
+import { useContext } from "react";
+import { CyclesContext } from "../../contexts/CyclesContext";
 
 export function History() {
+  const { cycles } = useContext(CyclesContext);
+  
   return (
     <div className={styles.historyContainer}>
       <h1 className={styles.historyContainerTitle}>Meu histórico</h1>
